@@ -1,0 +1,145 @@
+#!/usr/bin/python
+
+import sys
+import os
+import glob
+import shutil
+import zipfile
+
+# Monta a estrutura de pastas do pacote de instalacao
+# /tmp/bmonitor/<HOSTNAME>
+# /tmp/bmonitor/<HOSTNAME>/conf
+# /tmp/bmonitor/<HOSTNAME>/logs
+def buildEasyInstallPackageStructure( host_name ):
+	try:
+		os.mkdir("/tmp/bmonitor/{host_name}".format(host_name=host_name))
+		os.mkdir('/tmp/bmonitor/{host_name}/conf'.format(host_name=host_name))
+		os.mkdir('/tmp/bmonitor/{host_name}/logs'.format(host_name=host_name))
+	except os.error:
+		print "Erro ao criar pastas."
+	
+# Copia os executaveis desejados para a pasta do instalador
+def buildEasyInstallPackageBinaries( host_name, opersystem, arch ):
+    try:
+		# na copia para o destino, a pasta de destino nao deve existir.
+		destination = "/tmp/bmonitor/{host_name}/bin/".format(host_name=host_name)
+		source = "/opt/bpanel/bmonitor/{opersystem}/{arch}/".format(opersystem=opersystem,arch=arch)
+		shutil.copytree(source, destination)
+    except os.error:
+    	print "Erro ao copiar executaveis para instalador"
+    	raise
+
+# Copia scripts customizados para a pasta raiz do instalador
+# Aproveitando, configura cada um dos servicos para uso incluindo
+# as instancias associadas.
+def buildEasyInstallPackageCustomScripts(  host_name, opersystem, services ):
+	try:
+		for i, service in enumerate(services):
+			destination = "/tmp/bmonitor/{host_name}/".format(host_name=host_name)
+			source = "/opt/bpanel/bmonitor/{opersystem}/{service}/".format(opersystem=opersystem,service=service["service"])
+			for filename in glob.glob(os.path.join(source, '*.*')):
+				shutil.copy(filename, destination)
+			# Para cada service e para cada instance, faremos a validacao da config
+			for instance in service["instances"]:
+				buildEasyInstallPackageCustomScriptsConfig( host_name, service["service"], instance, service["parameters"] )
+	except os.error:
+		print "Erro ao copiar scripts customizados para instalador"
+		raise
+
+# Constroi a config de um servico especifico
+# e grava o arquivo de config dentro de
+# conf/<servico>_<instancia>.conf
+def buildEasyInstallPackageCustomScriptsConfig( host_name, service, instance, parameters ):
+	# sugere-se melhorar esta parte do script no futuro
+	if service == "oracle":
+		content = "jdbc_driver=oracle.jdbc.driver.OracleDriver\n"
+		content += "jdbc_url=jdbc:oracle:thin:@{ip}:{port}:{instance}\n"
+		content += "jdbc_username={username}\n"
+		content += "jdbc_password={password}\n"
+		content += "log_file=bmonitor_{instance}.log\n"
+		content += "debug=0\n"
+		file_name = "/tmp/bmonitor/{host_name}/conf/{service}_{instance}.conf".format(service=service,instance=instance,host_name=host_name)
+		with open(file_name, 'w+') as f:
+			f.write( content.format(username=parameters["username"],password=parameters["password"],instance=instance,port=parameters["port"],ip=parameters["ip"]) )
+
+# Monta os arquivos basicos de config.
+# Adiciona as configs do host e do server, bem como
+# services adicionais
+# Observe que:
+#	install_path pode mudar se for windows ou linux
+#	instance pode ser a instancia oracle
+def buildEasyInstallPackageConfig( server_name, host_name, services, install_path ):
+	instanceless_services = []
+	for service in services:
+		if len(service["instances"]) < 1:
+			instanceless_services.append(service)
+		for instance in service["instances"]:
+			content = "Hostname={service}-{instance}-{host_name}\n"
+			content += "ServerActive={server_name}\n"
+			content += "PidFile={install_path}/bmonitor_{instance}.conf\n"
+			content += "UserParameter={service}[*],{install_path}/{service}.bmonitor {instance} $1 $2\n"
+			content += "StartAgents=0\n"
+			content += "Timeout=30\n"
+			file_name = "/tmp/bmonitor/{host_name}/conf/bmonitor_{instance}.conf".format(host_name=host_name,instance=instance)
+			print content.format(host_name=host_name,server_name=server_name,install_path=install_path,instance=instance,service=service["service"])
+			with open(file_name, 'w+') as f:
+				f.write( content.format(host_name=host_name,server_name=server_name,install_path=install_path,instance=instance,service=service["service"]) )
+	content = "Hostname=srv-{host_name}\n"
+	content += "ServerActive={server_name}\n"
+	content += "PidFile={install_path}/bmonitor_main.conf\n"
+	content += "StartAgents=0\n"
+	content += "Timeout=30\n"
+	for service in instanceless_services:
+		content += "UserParameter={service}[*],{install_path}/{service}.bmonitor $1 $2\n".format(service=service["service"],instance=instance,install_path=install_path)
+	file_name = "/tmp/bmonitor/{host_name}/conf/bmonitor_main.conf".format(host_name=host_name)
+	print content.format(host_name=host_name,server_name=server_name,install_path=install_path,instance=instance)
+	with open(file_name, 'w+') as f:
+		f.write( content.format(host_name=host_name,server_name=server_name,install_path=install_path,instance=instance) )
+
+
+# Instalador para nosso novo pacote.
+# Dependendo do sistema operacional ele fica diferente.
+def buildEasyInstallPackageInstaller( host_name, oper_system, services ):
+	destination = "/tmp/bmonitor/{host_name}/".format(host_name=host_name)
+	source = "/opt/bpanel/bmonitor/{opersystem}/".format(opersystem=oper_system)
+	for fname in glob.glob(os.path.join(source, 'install.*')):
+		shutil.copy(fname, destination)
+			
+	#WINDOWS tem que instalar todos os servicos intependentemente
+	if oper_system == 'WINDOWS':
+		with open(destination+"install.bat", 'a+') as f:
+			for fname in glob.glob(os.path.join("/tmp/bmonitor/{host_name}/conf/".format(host_name=host_name), 'bmonitor*')):
+				print fname
+				f.write( "@c:\\bmonitor\\bin\\zabbix_agentd.exe -i -c -m c:\\bmonitor\\conf\\"+ os.path.basename(fname) + "\n" )		
+	
+# compacta o conteudo para enviarmos para download.
+def zipEasyInstallPackage( host_name, folder ):
+	filename = '/tmp/bmonitor/{host_name}.zip'.format(host_name=host_name)
+	zip = zipfile.ZipFile(filename, 'w')
+	rootlen = len(folder) + 1
+	for base, dirs, files in os.walk(folder):
+	   for file in files:
+		  fn = os.path.join(base, file)
+		  zip.write(fn, fn[rootlen:])
+
+
+# Monta um pacote de instalacao para um determinado host
+def buildEasyInstallPackage( host_name, server_name, oper_system, arch, services, install_path ):
+	buildEasyInstallPackageStructure( host_name )
+	buildEasyInstallPackageBinaries( host_name, oper_system, arch )
+	buildEasyInstallPackageCustomScripts( host_name, oper_system, services )
+	# cada servico devera ser avaliado como coleta independente
+	buildEasyInstallPackageConfig( server_name, host_name, services, install_path )
+	buildEasyInstallPackageInstaller( host_name, oper_system, services )
+	zipEasyInstallPackage( host_name, "/tmp/bmonitor/{host_name}".format(host_name=host_name) )
+
+
+
+services = [ {'service':"oracle", 'instances': [ "tasy","orcl","dbprod" ], 'parameters': dict([("ip","localhost"),("port","1521"),("username","zabbix"),("password","suporte")]) },{ 'service':"apache", 'instances': [], 'parameters':[] },  { 'service':"postfix", 'instances': [], 'parameters':[] } ]
+
+buildEasyInstallPackage( "localhost", "cluster.bouwen.com.br", "WINDOWS", "x64", services, "/opt/bmonitor" );
+
+
+
+
+

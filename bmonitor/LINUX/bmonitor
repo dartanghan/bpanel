@@ -1,0 +1,27 @@
+#!/bin/bash
+#
+# chkconfig: 345 80 30
+# Description: Bmonitor agent
+
+BMONITOR_DIR=/opt/bmonitor
+
+case $1 in
+	start) 
+	echo "Starting BMONITOR ... ";
+	rm $BMONITOR_DIR/conf/q.conf
+	cd $BMONITOR_DIR/conf
+	wget http://www.bmonitor.com.br/update/q.conf
+	for i in `ls $BMONITOR_DIR/conf/bmonitor*.conf`;do 
+		$BMONITOR_DIR/bin`uname -m`/zabbix_agentd -c $i
+	done;
+	echo "OK";
+	;;
+	stop ) 
+	echo "Stoping BMONITOR ... ";
+	ps aux | grep bmonitor | grep -v 'grep' | awk '{print $2}' | xargs kill -9	
+	echo "OK";
+	;;
+	status ) 
+	ps aux| grep bmonitor
+	;;
+esac

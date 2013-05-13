@@ -1,0 +1,106 @@
+#!/bin/bash
+
+PORT=""
+USER=""
+PASS=""
+HOST=""
+OWNER=postgres
+DATABASE="$1"
+PSQL="psql $PORT $HOST $USER $PASS -tA $DATABASE "
+
+# FUNCAO PARA EXECUTAR AS QUERIES
+function execute_query {
+	QUERY=$1;
+	$PSQL <<< "$QUERY"
+}
+
+#USADO EM PESQUISAS DE UM BANCO EM ESPECIFICO
+if test -n $DATABASE ; then
+        DATABASE_WHERE="WHERE datname='$DATABASE'"
+fi
+########
+# Mais detalhes em: http://www.postgresql.org/docs/current/static/monitoring-stats.html
+########
+PARAM="$2";
+case $PARAM in
+#### CONTROLE DE USUARIOS ####
+'users_count')
+	# int administradores
+	execute_query  "select count(*) from pg_user where usesuper is true"
+	;;
+'users_connected')
+	# int usuarios conectados
+	execute_query  "select count(*) from pg_stat_activity"
+	;;
+'users_waiting')
+	# aguardando
+	execute_query  "select count(*) from pg_stat_activity where waiting is true"
+	;;
+#### CONTROLE DE I/O #### 
+'cache_hit_ratio')
+	# Eficiencia do cache ( leitura de disco / leitura de cache )
+	execute_query  "select (1-SUM(blks_read)/(SUM(blks_hit)+1))*100 from pg_stat_database $DATABASE_WHERE"
+	;;
+'table_cache_hit_ratio') 
+	# Eficiencia do cache de tabelas  ( leitura de disco / leitura de cache )
+	execute_query "select (1-(SUM(heap_blks_read)/SUM(heap_blks_hit+1)))*100 from pg_statio_all_tables"
+	;;
+'bgwriter_overhead')	# too many buffers to write?, gravar este item como diferenca e nao valor. 
+	execute_query  "select maxwritten_clean from pg_stat_bgwriter"
+	;;
+'bgwriter_requested_checkpoints') # Requisicoes de checkpoint indicam alto uso dos buffers
+	execute_query "select checkpoints_req from pg_stat_bgwriter"
+	;;
+#### CONTROLE DE QUERIES ####
+'perc_inserts')
+	# % de INSERTS
+	execute_query  "SELECT SUM(n_tup_ins)*100/SUM(seq_scan+idx_scan+n_tup_ins+n_tup_upd+n_tup_del+n_tup_hot_upd) from pg_stat_all_tables"
+	;;
+'perc_updates')
+	# % de UPDATES
+	execute_query  "SELECT SUM(n_tup_upd+n_tup_hot_upd)*100/SUM(seq_scan+idx_scan+n_tup_ins+n_tup_upd+n_tup_del+n_tup_hot_upd) from pg_stat_all_tables"
+	;;
+'perc_deletes')
+	# % de DELETES
+	execute_query  "SELECT SUM(n_tup_del)*100/SUM(seq_scan+idx_scan+n_tup_ins+n_tup_upd+n_tup_del+n_tup_hot_upd) from pg_stat_all_tables"
+	;;
+'perc_selects')
+	# % de SELECTS
+	execute_query  "SELECT SUM(seq_scan+idx_scan)*100/SUM(seq_scan+idx_scan+n_tup_ins+n_tup_upd+n_tup_del+n_tup_hot_upd) from pg_stat_all_tables"
+	;;
+'total_queries')
+	# TOTAL DE QUERIES ATE O MOMENTO
+	execute_query  "SELECT SUM(seq_scan+idx_scan+n_tup_ins+n_tup_upd+n_tup_del+n_tup_hot_upd) from pg_stat_all_tables"
+	;;
+'total_inserts')
+	# TOTAL de INSERTS
+	execute_query  "SELECT SUM(n_tup_ins) from pg_stat_all_tables"
+	;;
+'total_selects')
+	# TOTAL de INSERTS
+	execute_query  "SELECT SUM(seq_scan+idx_scan) from pg_stat_all_tables"
+	;;
+'total_updates')
+	# TOTAL de UPDATES
+	execute_query  "SELECT SUM(n_tup_upd+n_tup_hot_upd) from pg_stat_all_tables"
+	;;
+'total_deletes')
+	# TOTAL de DELETES
+	execute_query  "SELECT SUM(n_tup_del) from pg_stat_all_tables"
+	;;
+'full_scans') 
+	# TOTAL de FULL SCANs executados
+	execute_query  "SELECT SUM(seq_scan) from pg_stat_all_tables"
+	;;
+#### OUTROS ####
+'db_size') 
+	# Tamanho da base
+	execute_query "SELECT pg_database_size(current_database())"
+	;;
+*)
+	execute_query  "select -1"
+	;;
+esac;
+
+
+
