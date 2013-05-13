@@ -1,0 +1,4 @@
+cd /opt/bmonitor/
+/u01/app/oracle/product/10.2.0/db_1/jdk/bin/java -jar /opt/bmonitor/bmon.jar  -q /opt/bmonitor/conf/q.conf -c /opt/bmonitor/conf/bmon.$1.conf -i $2 $3 $4 $5
+
+

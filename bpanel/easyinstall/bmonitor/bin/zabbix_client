@@ -1,0 +1,24 @@
+#!/bin/bash
+#
+# chkconfig: 345 80 30
+#
+
+ZABBIX_DIR=/home/oracle/BouwenBix/agent
+
+case $1 in
+	start) 
+	echo "Starting ZABBIX ... ";
+	$ZABBIX_DIR/zabbix_agentd -c $ZABBIX_DIR/zabbix.conf
+	echo "OK";
+	;;
+	stop ) 
+	echo "Stoping ZABBIX ... ";
+	killall zabbix_agentd;
+	rm /tmp/zabbix_agent.pid
+	echo "OK";
+	;;
+	status ) 
+	more /tmp/zabbix_agent.pid
+	;;
+esac
+

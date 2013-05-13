@@ -1,0 +1,191 @@
+#!/bin/bash
+PORT=""
+USER="-uroot"
+PASS="-psuporte"
+HOST="-h127.0.0.1"
+OWNER=postgres
+MYSQL="/usr/bin/mysql $PORT $HOST $USER $PASS -s "
+
+######o#
+# Main #
+########
+
+if [[ $# ==  1 ]];then
+    #Agent Mode
+    CASE_VALUE=$1
+else
+    #No Parameter
+        echo "Erro na execucao";
+    exit 0
+fi
+
+TEMP_FILE=$(mktemp)
+$MYSQL <<< "show global status;" > $TEMP_FILE
+
+#variaveis diversas
+physical_memory="`free -b | grep Mem | awk '{print $2}'`"
+swap_memory="`free -b | grep Swap | awk '{print $2}'`"
+Available_memory=$(((physical_memory*9/10)-(max_connections*262144)))
+Available_memory=$((Available_memory-max_connections*2*8192))
+
+# Agora vamos preparar as variaveis novas...
+sed -i 's/\t/=/g' $TEMP_FILE
+. $TEMP_FILE 
+rm $TEMP_FILE
+
+case $CASE_VALUE in
+'Percent_innodb_log_size_vs_buffer_pool')
+	echo "$((((innodb_log_files_in_group*innodb_log_file_size)/(innodb_buffer_pool_size+1))*100))"
+	rval=$?;;
+'Percent_innodb_log_write_waits_required')
+	echo "$(((Innodb_log_waits/(Innodb_log_writes+1))*100))"
+	rval=$?;;
+'Percent_innodb_cache_hit_rate')
+	echo "$(((1-(Innodb_buffer_pool_reads/(Innodb_buffer_pool_read_requests+1)))*100))"
+	rval=$?;;
+'Percent_innodb_cache_write_waits_required')
+	echo "$(((Innodb_buffer_pool_wait_free/(Innodb_buffer_pool_write_requests+1))*100))"
+	rval=$?;;
+'Innodb_log_file_size_total')
+	echo "$((innodb_log_files_in_group*innodb_log_file_size))"
+	rval=$?;;
+'Percent_table_cache_hit_rate')
+	echo "$(((Open_tables*100)/(Opened_tables+1)))"
+	rval=$?;;
+'Percent_table_lock_contention')
+	echo "$(((Table_locks_waited*100)/(Table_locks_waited+Table_locks_immediate)))"
+	rval=$?;;
+'Percent_tmp_tables_on_disk')
+	echo "$(((Created_tmp_disk_tables*100)/(Created_tmp_disk_tables+Created_tmp_tables)))"
+	rval=$?;;
+'Percent_transactions_saved_tmp_file')
+	echo "$(((Binlog_cache_disk_use*100)/(Binlog_cache_use+1)))"
+	rval=$?;;
+'Percent_tmp_sort_tables')
+	echo "$(((Sort_merge_passes*100)/(Sort_range+Sort_scan+1)))"
+	rval=$?;;
+'Percent_files_open')
+	echo "$(((Open_files)/(open_files_limit+1)))"
+	rval=$?;;
+'Percent_thread_cache_hit_rate')
+	echo "$(((1-(Threads_created/Connections))*100))"
+	rval=$?;;
+'Percent_connections_used')
+	echo "$(((Threads_connected*100)/(max_connections+1)))"
+	rval=$?;;
+'Percent_aborted_connections')
+	echo "$(((Aborted_connects*100)/Connections))"
+	rval=$?;;
+'Percent_maximum_connections_ever')
+	echo "$(((Max_used_connections*100)/(max_connections+1)))"
+	rval=$?;;
+'Average_rows_per_query')
+	echo "$(((Handler_read_first+Handler_read_key+Handler_read_next+Handler_read_prev+Handler_read_rnd+Handler_read_rnd_next+Sort_rows)/Questions))"
+	rval=$?;;
+'Total_rows_returned')
+	echo "$((Handler_read_first+Handler_read_key+Handler_read_next+Handler_read_prev+Handler_read_rnd+Handler_read_rnd_next+Sort_rows))"
+	rval=$?;;
+'Indexed_rows_returned')
+	echo "$((Handler_read_first+Handler_read_key+Handler_read_next+Handler_read_prev))"
+	rval=$?;;
+'Joins_without_indexes')
+	echo "$((Select_range_check+Select_full_join))"
+	rval=$?;;
+'Joins_without_indexes_per_day')
+	echo "$((((Select_range_check+Select_full_join)/$days)))"
+	rval=$?;;
+'Percent_full_table_scans')
+	echo "$((((Handler_read_rnd_next+Handler_read_rnd)/(Handler_read_rnd_next+Handler_read_rnd+Handler_read_first+Handler_read_next+Handler_read_key+Handler_read_prev))*100))"
+	rval=$?;;
+'Percent_query_cache_fragmentation')
+	echo "$(((Qcache_free_blocks/Qcache_total_blocks )*100))"
+	rval=$?;;
+'Percent_query_cache_hit_rate')
+	echo "$(((Qcache_hits/(Qcache_inserts+Qcache_hits+1))*100))"
+	rval=$?;;
+'Percent_query_cache_pruned_from_inserts')
+	echo "$(((Qcache_lowmem_prunes/(Qcache_inserts+1))*100))"
+	rval=$?;;
+'Percent_myisam_key_cache_in_use')
+	echo "$(((1-(Key_blocks_unused/((key_buffer_size/(key_cache_block_size+1))+1)))*100))"
+	rval=$?;;
+'Percent_myisam_key_cache_hit_rate')
+	echo "$(((1-(Key_reads/(1+Key_read_requests)))*100))"
+	rval=$?;;
+'Percent_myisam_key_cache_write_ratio')
+	echo "$(((Key_writes*100)/(1+Key_write_requests)))"
+	rval=$?;;
+'Number_myisam_key_blocks')
+	echo "$((key_buffer_size/(key_cache_block_size+1)))"
+	rval=$?;;
+'Used_myisam_key_cache_blocks')
+	echo "$(((key_buffer_size/(key_cache_block_size+1))-Key_blocks_unused))"
+	rval=$?;;
+'Available')
+	[[ `ps aux  | grep mysql | wc -l` -le 1 ]]; echo "$?"
+	rval=$?;;
+'Excessive_revokes') 
+	echo "$((Com_revoke+Com_revoke_all))"
+	rval=$?;;
+'Percent_writes_vs_total') 
+	echo "$(((Com_insert+Com_replace+Com_update+Com_delete)/Questions))"
+	rval=$?;;
+'Percent_inserts_vs_total') 
+	echo "$(((Com_insert+Com_replace)/Questions))"
+	rval=$?;;
+'Percent_selects_vs_total') 
+	echo "$(((Com_select+Qcache_hits)/Questions))"
+	rval=$?;;
+'Percent_deletes_vs_total')
+	echo "$((Com_delete/Questions))"
+	rval=$?;;
+'Percent_updates_vs_total') 
+	echo "$((Com_update/Questions))"
+	rval=$?;;
+'Recent_schema_changes') 
+	echo "$((Com_create_db+Com_alter_db+Com_drop_db+Com_create_function+Com_drop_function+Com_create_index+Com_drop_index+Com_alter_table+Com_create_table+Com_drop_table+Com_drop_user))"
+	rval=$?;;
+'Fragmented_table_count') 
+	echo "`$MYSQL <<< "SELECT COUNT(TABLE_NAME) as Frag FROM information_schema.TABLES WHERE TABLE_SCHEMA NOT IN ('information_schema','mysql') AND Data_free > 10000" | grep Frag | awk '{print $2}'`";
+	rval=$?;;
+'Suggested_table_cache')
+	echo $((max_connections*2))
+	rval=$?;;
+'Suggested_thread_cache_size')
+	echo $((max_connections/2))
+	rval=$?;;
+'Suggested_key_buffer_size')
+	echo $(((Available_memory*7/10)/2))
+	rval=$?;;
+'Suggested_read_buffer_size')
+	echo $((physical_memory/100));
+	rval=$?;;
+'Suggested_read_rnd_buffer_size')
+	echo $((physical_memory*4/100))
+	rval=$?;;
+'Suggested_sort_buffer_size')
+	echo $((physical_memory*2/100))
+	rval=$?;;
+'Suggested_query_cache_size')
+	echo $(((Available_memory/10)))
+	rval=$?;;
+'Suggested_innodb_additional_mem_pool_size')
+	echo "$(((((Available_memory*7/10)-max_connections*2)*(1-1/20))*2/100))"
+	rval=$?;;
+'Suggested_innodb_log_buffer_size')
+	echo "$(((((Available_memory*7/10)-max_connections*2)*(1-1/20))/100))"
+	rval=$?;;
+'Suggested_innodb_buffer_pool_size')
+	echo $(((((Available_memory*7/10)-max_connections*2)*(1-1/20))-((((Available_memory*7/10)-max_connections*2)*(1-1/20))/100)))
+	rval=$?;;
+'Suggested_innodb_log_file_size')
+	echo $(((((Available_memory*7/10)-max_connections*2)*(1-1/20))-((((Available_memory*7/10)-max_connections*2)*(1-1/20))/100)*2/10))
+	rval=$?;;
+*)
+	echo "`$MYSQL <<< "show global status like '$CASE_VALUE'" | grep "$CASE_VALUE" | awk '{print $2}'`"
+	rval=$?;;
+esac
+
+if [ "$rval" -ne 0 ]; then
+      echo "ZBX_NOTSUPPORTED"
+fi
