@@ -1,4 +1,4 @@
 @cd c:\bmonitor 
-@java -jar c:\bmonitor\bmon.jar  -q c:\bmonitor\conf\q.conf -c c:\bmonitor\conf\bmon.conf -i $1 $2 $3 $4 $5
+@java -jar c:\bmonitor\bmon.jar  -q c:\bmonitor\conf\q.conf -c c:\bmonitor\conf\oracle_$1.conf -i $2 $3 $4 $5
 
 

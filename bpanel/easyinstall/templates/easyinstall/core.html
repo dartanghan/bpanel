@@ -1,0 +1,151 @@
+<html>
+	<head>
+		<title>BMonitor</title>
+		<link href="/static/css/smoothness/jquery-ui-1.10.2.custom.css" rel="stylesheet">
+		<script src="/static/js/jquery-1.9.1.js"></script>
+		<script src="/static/js/jquery-ui-1.10.2.custom.js"></script>
+
+		<!-- Javascripts do bmonitor -->
+		<script type="text/javascript" src="/static/js/easyInstaller.js"></script>
+
+		<style type="text/css">
+			body{
+				font: 8pt Verdana;
+			
+			}
+			
+			#topMenu{
+				width: '100%';
+				background-color: #555;
+				text-align: right;
+				font: 8pt Verdana;
+				color: #ccc;
+				padding: 1;
+			}
+
+			#headerLogo{
+				background-image: linear-gradient(bottom, rgb(230,230,230) 11%, rgb(250,250,250) 61%);
+				background-image: -o-linear-gradient(bottom, rgb(230,230,230) 11%, rgb(250,250,250) 61%);
+				background-image: -moz-linear-gradient(bottom, rgb(230,230,230) 11%, rgb(250,250,250) 61%);
+				background-image: -webkit-linear-gradient(bottom, rgb(230,230,230) 11%, rgb(250,250,250) 61%);
+				background-image: -ms-linear-gradient(bottom, rgb(230,230,230) 11%, rgb(250,250,250) 61%);
+
+				background-image: -webkit-gradient(
+					linear,
+					left bottom,
+					left top,
+					color-stop(0.11, rgb(230,230,230)),
+					color-stop(0.61, rgb(250,250,250))
+				);
+
+				height: 80;
+				width: '100%';
+				border-bottom: 3px solid #ccc;
+			}
+			body{
+				margin:0;
+			}
+			#logoPNG{
+				margin: 10;
+			}
+			.topButtons{
+				float: left;
+			}
+			a{
+				color: #e55;
+			}
+			
+			#formComponent{
+				font-size: 9pt;
+				float: left;
+			}
+			
+			#cssmenu ul
+			{
+				margin:0;
+				padding:0;
+				list-style-type:none;
+				width:auto;
+				position:relative;
+				display:block;
+				height:30px;
+				font-size:12px;
+				font-weight:bold;
+				background-color: #555;
+				font-family:Arial, Helvetica, sans-serif;
+				border-bottom:1px solid #000000;
+				border-top:1px solid #000000;
+			}
+			#cssmenu li
+			{
+				display:block;
+				float:left;
+				margin:0;
+				padding:0;
+			}
+				
+			#cssmenu li a
+			{
+				display:block;
+				float:left;
+				color:#999999;
+				text-decoration:none;
+				font-weight:bold;
+				padding:8px 20px 0 20px;
+			}
+
+			#cssmenu li a:hover
+			{	
+				display:inline;
+				height:22px;
+				margin: 1px;
+				border-top: 3px solid #e55;
+				float:left;
+				margin:0;
+			}
+			
+			.bwidget{
+				margin: 10px; 
+				display: block; 
+				width: 200px; 
+				float: left;
+			}
+
+		</style>
+		<script type="text/javascript">
+			$(function() {
+				
+				$( "#EasyInstallBTN" ).click(function(){
+					buildFormEasyInstall();
+				});
+			});
+		</script>
+		
+	</head>
+		
+	<body>
+		<div id="topMenu">
+			<a>Dados de conta</a> | <a>Sair</a>
+		</div>
+		<div id="headerLogo">
+			<img id="logoPNG" src="http://www.bmonitor.com.br/wp-content/uploads/2013/02/logoBmonitor1.png" alt="logo" style="float:left" width="200" height="66"/>
+		</div>
+		<div id="cssmenu">
+		<ul >
+			<li><a href="#" id="EasyInstallBTN">EasyInstall</a></li>
+			<li><a>Dashboard</a></li>
+			<li><a>Mensagens</a></li>
+			<li><a>Contas</a></li>
+			<li><a>Notifica&ccedil;&otilde;es</a></li>
+		</ul>
+		</div>
+		
+		<div id="pageContent" style="clear: both;">
+		{{ body }}
+		</div>
+		<div></div>
+		<div></div>
+	</body>
+</html>
+
+

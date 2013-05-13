@@ -15,7 +15,6 @@ def buildEasyInstallPackageStructure( host_name ):
 	try:
 		os.mkdir("/tmp/bmonitor/{host_name}".format(host_name=host_name))
 		os.mkdir("/tmp/bmonitor/{host_name}/conf".format(host_name=host_name))
-		os.mkdir("/tmp/bmonitor/{host_name}/libs".format(host_name=host_name))
 		os.mkdir('/tmp/bmonitor/{host_name}/logs'.format(host_name=host_name))
 	except os.error:
 		print "Erro ao criar pastas."
@@ -41,8 +40,6 @@ def buildEasyInstallPackageCustomScripts(  host_name, opersystem, services ):
 			source = "/opt/bpanel/bpanel/easyinstall/bmonitor/{opersystem}/{service}/".format(opersystem=opersystem,service=service["service"])
 			for filename in glob.glob(os.path.join(source, '*.*')):
 				shutil.copy(filename, destination)
-			for filename2 in glob.glob(os.path.join(source+'/libs/', '*.*')):
-				shutil.copy(filename2, destination+'/libs')
 			# Para cada service e para cada instance, faremos a validacao da config
 			for instance in service["instances"]:
 				buildEasyInstallPackageCustomScriptsConfig( host_name, service["service"], instance, service["parameters"] )

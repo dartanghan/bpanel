@@ -6,7 +6,7 @@ BMON_FOLDER=/opt/bmonitor
 # instalando script de startup
 # 
 function chk(){
-	cp bmonitor /etc/init.d	
+	cp bin/bmonitor /etc/init.d	
 	chmod +x /etc/init.d/bmonitor
 	chkconfig --add bmonitor
 	chkconfig bmonitor on
