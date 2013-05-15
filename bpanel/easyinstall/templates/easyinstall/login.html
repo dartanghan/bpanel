@@ -1,0 +1,83 @@
+<html>
+	<head>
+		<title>BMonitor</title>
+		<link href="/static/css/smoothness/jquery-ui-1.10.2.custom.css" rel="stylesheet">
+		<script type="text/javascript" src="/static/js/jquery-1.9.1.js"></script>
+		<script type="text/javascript" src="/static/js/jquery-ui-1.10.2.custom.js"></script>
+		<script type="text/javascript" src="/static/js/jquery-md5.js"></script>
+		<script type="text/javascript" src="/static/js/jquery-blockui.js"></script>
+
+		<style type="text/css">
+			
+			body{
+				font: 8pt Verdana;
+			}
+			.gradient{
+				background: -moz-linear-gradient(top,  rgba(0,0,0,0.05) 0%, rgba(0,0,0,0) 100%); /* FF3.6+ */
+				background: -webkit-gradient(linear, left top, left bottom, color-stop(0%,rgba(0,0,0,0.05)), color-stop(100%,rgba(0,0,0,0))); /* Chrome,Safari4+ */
+				background: -webkit-linear-gradient(top,  rgba(0,0,0,0.05) 0%,rgba(0,0,0,0) 100%); /* Chrome10+,Safari5.1+ */
+				background: -o-linear-gradient(top,  rgba(0,0,0,0.05) 0%,rgba(0,0,0,0) 100%); /* Opera 11.10+ */
+				background: -ms-linear-gradient(top,  rgba(0,0,0,0.05) 0%,rgba(0,0,0,0) 100%); /* IE10+ */
+				background: linear-gradient(to bottom,  rgba(0,0,0,0.05) 0%,rgba(0,0,0,0) 100%); /* W3C */
+				filter: progid:DXImageTransform.Microsoft.gradient( startColorstr='#0d000000', endColorstr='#00000000',GradientType=0 ); /* IE6-9 */
+			}
+			.no-close .ui-dialog-titlebar-close {
+				display: none;
+			}
+			.loginPane{
+				width: 400px;
+				height: 300px;
+			}
+			input{
+				width: 200;
+				float: right;
+			}
+			.fieldLabel{
+				width:50;
+				float:right;
+				padding: 3px;
+			}
+ 		</style>
+		<script type="text/javascript">
+			$(function() {
+				$.blockUI({ 
+					theme: true,
+					message: $('#loginFormDiv') }); 
+				$('#btnLogin').button({
+					label: 'Login'
+					}).click(function(){
+						performLogin();
+						});
+				
+				$('body').keypress(function (e) {
+				  	if (e.which == 13) {
+						performLogin();
+				  	}
+				});
+				
+				function performLogin(){
+					if( $('#username').val() && $('#password').val() ){
+						$.get("{% url 'index' %}",{ 
+							"username": MD5($('#username').val()), 
+							"password": MD5($('#password').val()) 
+						});
+					}else{
+						alert('Preencha corretamente os campos para acessar o sistema.');
+					}
+				}
+			});
+		</script>
+		
+	</head>
+		
+	<body id="body">
+			<div id="loginFormDiv" class="ui-corner-all ui-widget">
+				<p style="text-align:center;"><img height="80" src="http://www.bmonitor.com.br/wp-content/uploads/2013/02/logoBmonitor1.png"/></p>
+				<p><input type="text" id="username"/></p><div class="fieldLabel">Login</div><br/>
+				<p><input type="password" id="password"/></p><div class="fieldLabel">Senha</div>
+				<div style="clear:both"></div>
+				<hr/>
+				<div style="float:right;" id="btnLogin"></div>
+			</div>
+	</body>
+</html>
